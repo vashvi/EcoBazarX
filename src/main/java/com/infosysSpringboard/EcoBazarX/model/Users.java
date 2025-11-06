@@ -1,7 +1,9 @@
 package com.infosysSpringboard.EcoBazarX.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = "password")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+
 public class Users {
 
     @Id
@@ -37,4 +41,12 @@ public class Users {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'USER'")
+    private Role role;
+
+
+
 }
