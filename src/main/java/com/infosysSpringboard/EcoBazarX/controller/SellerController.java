@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/seller")
@@ -43,21 +44,37 @@ public class SellerController {
 
         product.setPostedBy(seller);
 
-        String description = product.getDescription();
-
-        if (description == null || description.isBlank()) {
-            return ResponseEntity.badRequest().body("Product description is required for carbon estimation.");
+        // --- Require structured carbon details ---
+        if (product.getCarbonDetails() == null) {
+            return ResponseEntity.badRequest().body("❌ Carbon details are required to estimate the carbon footprint.");
         }
 
-        CarbonEstimate estimate = carbonFootprintService.getCarbonEstimate(description);
+        // --- 1️⃣ Get AI-based carbon footprint ---
+        CarbonEstimate estimate = carbonFootprintService.getCarbonEstimateFromDetails(product.getCarbonDetails());
 
+        // --- 2️⃣ Assign footprint data ---
         product.setCarbonFootprint(BigDecimal.valueOf(estimate.getEstimatedCarbonFootprint()));
         product.setCarbonExplanation(estimate.getExplanation());
 
+        // --- 3️⃣ Assign eco score ---
+        double cf = estimate.getEstimatedCarbonFootprint();
+        int carbonPoints;
+        if (cf <= 1) carbonPoints = 50;
+        else if (cf <= 3) carbonPoints = 30;
+        else if (cf <= 5) carbonPoints = 20;
+        else if (cf <= 10) carbonPoints = 10;
+        else carbonPoints = 5;
+
+        product.setCarbonPoints(carbonPoints);
+
+        // --- 4️⃣ Save ---
         productService.saveProduct(product);
 
-        return ResponseEntity.ok("Product added successfully by " + seller.getUsername());
+        return ResponseEntity.ok("✅ Product added successfully by " + seller.getUsername() +
+                " | Carbon footprint: " + cf + " kg CO₂e | Points: " + carbonPoints);
     }
+
+
 
 
 
@@ -102,28 +119,46 @@ public class SellerController {
 
         String username = extractUsernameFromJWT(request);
 
-        // Step 1: Get the seller
         Users seller = userRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Seller not found"));
 
-        // Step 2: Get the order
         Order order = checkoutService.getOrderById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // Step 3: Verify that this seller owns at least one product in the order
         boolean ownsProduct = order.getItems().stream()
-                .anyMatch(item -> item.getProduct().getPostedBy().getId().equals(seller.getId())); // ✅ FIXED
+                .anyMatch(item -> item.getProduct().getPostedBy().getId().equals(seller.getId()));
 
         if (!ownsProduct) {
             return ResponseEntity.status(403)
                     .body("You are not authorized to update this order — none of your products are in it.");
         }
 
-        // Step 4: Allow the seller to update order status
         Order updatedOrder = checkoutService.updateOrderStatus(orderId, status);
 
         return ResponseEntity.ok(updatedOrder);
     }
+
+
+    @GetMapping("/my-orders")
+    public ResponseEntity<List<Order>> getOrdersForSeller(HttpServletRequest request) {
+        String username = extractUsernameFromJWT(request);
+        Users seller = userRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
+
+        List<Order> sellerOrders = checkoutService.getOrdersBySeller(seller);
+
+        // Filter out other sellers’ products from each order
+        sellerOrders.forEach(order ->
+                order.setItems(order.getItems().stream()
+                        .filter(item -> item.getProduct().getPostedBy().getId().equals(seller.getId()))
+                        .collect(Collectors.toList()))
+        );
+
+        return ResponseEntity.ok(sellerOrders);
+    }
+
+
+
 
 
 }

@@ -1,6 +1,7 @@
 package com.infosysSpringboard.EcoBazarX.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.infosysSpringboard.EcoBazarX.model.CarbonDetails;
 import com.infosysSpringboard.EcoBazarX.model.CarbonEstimate;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -17,16 +18,54 @@ public class CarbonFootprintService {
         this.chatClient = ChatClient.create(chatModel);
     }
 
-    public CarbonEstimate getCarbonEstimate(String productDescription) {
+    public CarbonEstimate getCarbonEstimateFromDetails(CarbonDetails details) {
         String prompt = """
-            Calculate the carbon footprint for the product description given and 
-            Return ONLY JSON (no markdown, no extra text):
-            {
-              "estimatedCarbonFootprint": number,
-              "explanation": "text"
-            }
-            Product Description: %s
-            """.formatted(productDescription);
+                You are an environmental impact estimation expert.
+                Based on the provided product data, estimate the total carbon footprint (in kilograms of CO₂ equivalent).
+                Include manufacturing, energy use, material type, and shipping impact.
+                
+                Respond ONLY with **valid JSON** (no markdown, no comments, no explanations).
+                The JSON must look exactly like this:
+                {
+                  "estimatedCarbonFootprint": 2.85,
+                  "explanation": "Manufacturing and long shipping distance are the major contributors."
+                }
+
+                Do not write placeholders like 'number' or add any comment. Return only valid JSON.
+
+                Product Data:
+                Product Name: %s
+                Volume: %s
+                Weight: %s
+                Material Composition: %s
+                Manufacturing Location: %s
+                Electricity Type: %s
+                Manufacturing Energy Used: %s
+                Packaging Details: %s
+                Shipping Mode: %s
+                Sea Freight Distance (km): %s
+                Truck Distance (km): %s
+                Lifespan: %s
+                Power Usage: %s
+                Recyclability Rate: %s
+                Biodegradability Rate: %s
+                """.formatted(
+                details.getProductName(),
+                details.getVolume(),
+                details.getWeight(),
+                details.getMaterialComposition(),
+                details.getManufacturingLocation(),
+                details.getElectricityType(),
+                details.getManufacturingEnergyUsed(),
+                details.getPackagingDetails(),
+                details.getShippingMode(),
+                details.getSeaFreightDistance(),
+                details.getTruckDistance(),
+                details.getLifespan(),
+                details.getPowerUsage(),
+                details.getRecyclabilityRate(),
+                details.getBiodegradabilityRate()
+        );
 
         String response = chatClient.prompt()
                 .user(prompt)
@@ -40,24 +79,25 @@ public class CarbonFootprintService {
         System.out.println("🔍 Raw AI Response:\n" + response);
 
         try {
-            // Step 1: Remove markdown fences like ```json ... ```
-            response = response.replaceAll("```json", "")
+            // Remove markdown or comments
+            response = response
+                    .replaceAll("```json", "")
                     .replaceAll("```", "")
+                    .replaceAll("//.*", "")
+                    .replaceAll("\\bnumber\\b", "0")  // replace rogue placeholder
                     .trim();
 
-            // Step 2: Fix common typos (like "explanthon" → "explanation")
-            response = response.replaceAll("\"explanthon\"", "\"explanation\"");
-
-            // Step 3: Extract JSON part
+            // Extract JSON
             int start = response.indexOf("{");
             int end = response.lastIndexOf("}") + 1;
-            if (start != -1 && end != -1 && end > start) {
+            if (start != -1 && end > start) {
                 String jsonPart = response.substring(start, end);
                 System.out.println("🧩 Cleaned JSON:\n" + jsonPart);
                 return objectMapper.readValue(jsonPart, CarbonEstimate.class);
             } else {
                 throw new RuntimeException("No valid JSON found in response");
             }
+
         } catch (Exception e) {
             System.err.println("⚠️ Failed to parse AI response: " + e.getMessage());
             CarbonEstimate fallback = new CarbonEstimate();

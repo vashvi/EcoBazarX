@@ -27,19 +27,16 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
-    // ✅ Fetch all SELLERS
     @GetMapping("/all-sellers")
     public ResponseEntity<List<Users>> findAllSellers() {
         return ResponseEntity.ok(service.findUsersByRole(Role.SELLER));
     }
 
-    // ✅ Fetch all CUSTOMERS
     @GetMapping("/all-customers")
     public ResponseEntity<List<Users>> findAllCustomers() {
         return ResponseEntity.ok(service.findUsersByRole(Role.USER));
     }
 
-    // ✅ Fetch all ADMINS
     @GetMapping("/all-admins")
     public ResponseEntity<List<Users>> findAllAdmins() {
         return ResponseEntity.ok(service.findUsersByRole(Role.ADMIN));

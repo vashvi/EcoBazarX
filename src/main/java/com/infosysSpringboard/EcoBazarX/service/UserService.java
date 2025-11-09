@@ -1,8 +1,10 @@
 package com.infosysSpringboard.EcoBazarX.service;
 
 import com.infosysSpringboard.EcoBazarX.model.Products;
+import com.infosysSpringboard.EcoBazarX.model.UserProfile;
 import com.infosysSpringboard.EcoBazarX.model.Users;
 import com.infosysSpringboard.EcoBazarX.repo.ProductRepo;
+import com.infosysSpringboard.EcoBazarX.repo.UserProfileRepo;
 import com.infosysSpringboard.EcoBazarX.repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +32,9 @@ public class UserService {
     @Autowired
     private AuthenticationManager authManager;
 
+    @Autowired
+    private UserProfileRepo userProfileRepo;
+
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
 
@@ -38,7 +43,19 @@ public class UserService {
         user.setPassword(encoder.encode(user.getPassword()));
 
 
-        return repo.save(user);
+        Users savedUser = repo.save(user);
+
+        UserProfile profile = UserProfile.builder()
+                .user(savedUser)
+                .carbonPoints(0)
+                .carbonSaved(0.0)
+                .badge("Bronze")       // optional default badge
+                .build();
+
+        userProfileRepo.save(profile);
+
+        return savedUser;
+
     }
 
 

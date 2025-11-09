@@ -1,16 +1,17 @@
 package com.infosysSpringboard.EcoBazarX.controller;
 
+import com.infosysSpringboard.EcoBazarX.dto.CarbonFootprintRequest;
 import com.infosysSpringboard.EcoBazarX.model.CarbonEstimate;
 import com.infosysSpringboard.EcoBazarX.model.Users;
 import com.infosysSpringboard.EcoBazarX.repo.CarbonInsightRepository;
 import com.infosysSpringboard.EcoBazarX.repo.UserRepo;
 import com.infosysSpringboard.EcoBazarX.service.CarbonFootprintService;
 import com.infosysSpringboard.EcoBazarX.service.JWTService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -30,16 +31,28 @@ public class CarbonFootprintController {
     @Autowired
     private CarbonInsightRepository carbonInsightRepository;
 
+//    @PostMapping("/estimate")
+//    public ResponseEntity<?> estimate(@RequestBody Map<String, String> request) {
+//        String description = request.get("description");
+//        if (description == null || description.isEmpty()) {
+//            return ResponseEntity.badRequest().body(Map.of("error", "Product description is required"));
+//        }
+//
+//        CarbonEstimate estimate = service.getCarbonEstimate(description);
+//        return ResponseEntity.ok( estimate);
+//    }
+
     @PostMapping("/estimate")
-    public ResponseEntity<?> estimate(@RequestBody Map<String, String> request) {
-        String description = request.get("description");
-        if (description == null || description.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Product description is required"));
+    public ResponseEntity<?> estimate(@RequestBody CarbonFootprintRequest request) {
+        if (request.getCarbonDetails() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Carbon details are required"));
         }
 
-        CarbonEstimate estimate = service.getCarbonEstimate(description);
-        return ResponseEntity.ok( estimate);
+        CarbonEstimate estimate = service.getCarbonEstimateFromDetails(request.getCarbonDetails());
+        return ResponseEntity.ok(estimate);
     }
+
+
 
     @GetMapping("/user/history")
     public ResponseEntity<?> getUserCarbonHistory(HttpServletRequest request) {

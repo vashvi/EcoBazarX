@@ -42,6 +42,9 @@ public class Products {
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 
+    @Embedded
+    private CarbonDetails carbonDetails;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "posted_by", nullable = false)
     private Users postedBy;
@@ -52,6 +55,11 @@ public class Products {
 
     @Column(name = "carbon_explanation", columnDefinition = "TEXT")
     private String carbonExplanation;
+
+    @Column(name = "carbon_points", nullable = false)
+    @Builder.Default
+    private Integer carbonPoints = 0;
+
 
     @Column(name = "created_at", updatable = false)
     @Builder.Default
