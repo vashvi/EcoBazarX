@@ -61,6 +61,15 @@ public class UserService {
 
     public String verify(Users user) {
         try {
+            // Support login by either username or email: if username not provided, try to find it by email
+            if ((user.getUsername() == null || user.getUsername().isBlank()) && user.getEmail() != null) {
+                java.util.Optional<Users> found = repo.findByEmail(user.getEmail());
+                if (found.isPresent()) {
+                    user.setUsername(found.get().getUsername());
+                } else {
+                    return "Login failed: user not found";
+                }
+            }
             Authentication authentication = authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
             );

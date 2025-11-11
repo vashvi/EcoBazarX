@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 public class UserController {
@@ -32,9 +34,46 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody Users user){
-        System.out.println(user);
-        return service.verify(user);
+    public ResponseEntity<?> login(@RequestBody Users user){
+        System.out.println("Login attempt with: " + user);
+        try {
+            String result = service.verify(user);
+            
+            // Parse the response
+            if (result.contains("Login successful")) {
+                // Extract token from the response
+                String token = result.substring(result.indexOf(": ") + 2);
+
+                // Fetch full user record from DB to return canonical data
+                Users dbUser = null;
+                if (user.getUsername() != null) {
+                    dbUser = userRepo.findByUsername(user.getUsername()).orElse(null);
+                } else if (user.getEmail() != null) {
+                    dbUser = userRepo.findByEmail(user.getEmail()).orElse(null);
+                }
+
+                // Create response object
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Login successful");
+                response.put("token", token);
+                response.put("user", dbUser != null ? dbUser : user);
+
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", result);
+                
+                return ResponseEntity.status(401).body(response);
+            }
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Login failed: " + e.getMessage());
+            
+            return ResponseEntity.status(401).body(response);
+        }
     }
 
     @GetMapping("/all-products")
