@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -35,46 +34,37 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Users user){
-        System.out.println("Login attempt with: " + user);
         try {
             String result = service.verify(user);
-            
-            // Parse the response
-            if (result.contains("Login successful")) {
-                // Extract token from the response
-                String token = result.substring(result.indexOf(": ") + 2);
 
-                // Fetch full user record from DB to return canonical data
-                Users dbUser = null;
-                if (user.getUsername() != null) {
-                    dbUser = userRepo.findByUsername(user.getUsername()).orElse(null);
-                } else if (user.getEmail() != null) {
-                    dbUser = userRepo.findByEmail(user.getEmail()).orElse(null);
-                }
-
-                // Create response object
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
-                response.put("message", "Login successful");
-                response.put("token", token);
-                response.put("user", dbUser != null ? dbUser : user);
-
-                return ResponseEntity.ok(response);
-            } else {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", result);
-                
-                return ResponseEntity.status(401).body(response);
+            if (!result.contains("Login successful")) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "success", false,
+                        "message", result
+                ));
             }
+
+            // Extract token
+            String token = result.substring(result.indexOf(": ") + 2);
+
+            // Always fetch REAL user using username OR email
+            Users dbUser = userRepo.findByUsernameOrEmail(user.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Login successful",
+                    "token", token,
+                    "user", dbUser       // contains REAL ROLE
+            ));
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Login failed: " + e.getMessage());
-            
-            return ResponseEntity.status(401).body(response);
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Login failed: " + e.getMessage()
+            ));
         }
     }
+
 
     @GetMapping("/all-products")
     public ResponseEntity<List<Products>> findAllProducts(){

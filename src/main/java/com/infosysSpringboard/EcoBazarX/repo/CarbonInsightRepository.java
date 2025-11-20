@@ -12,4 +12,7 @@ public interface CarbonInsightRepository extends JpaRepository<CarbonInsight, Lo
     List<CarbonInsight> findByUserOrderByRecordedAtDesc(Users user);
     Optional<CarbonInsight> findByUser(Users user);
 
+    void deleteByUserId(Long userId);
+
+
 }

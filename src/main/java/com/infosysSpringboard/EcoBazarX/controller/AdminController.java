@@ -1,10 +1,13 @@
 package com.infosysSpringboard.EcoBazarX.controller;
 
+import com.infosysSpringboard.EcoBazarX.dto.AdminStatsDto;
 import com.infosysSpringboard.EcoBazarX.model.Order;
+import com.infosysSpringboard.EcoBazarX.model.Products;
 import com.infosysSpringboard.EcoBazarX.model.Role;
 import com.infosysSpringboard.EcoBazarX.model.Users;
 import com.infosysSpringboard.EcoBazarX.service.AdminService;
 import com.infosysSpringboard.EcoBazarX.service.CheckoutService;
+import com.infosysSpringboard.EcoBazarX.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/admin")
 public class AdminController {
 
     @Autowired
@@ -20,6 +23,21 @@ public class AdminController {
 
     @Autowired
     CheckoutService checkoutService;
+
+    @Autowired
+    ProductService productService;
+
+//    @Autowired
+//    AdminStatsDto AdminStatsDto;
+
+//    @Autowired
+//    private ProductService productService;
+
+    @DeleteMapping("/products/{productId}")
+    public ResponseEntity<String> adminDeleteProduct(@PathVariable Long productId) {
+        productService.deleteProduct(productId);
+        return ResponseEntity.ok("Product deleted successfully!");
+    }
 
     @GetMapping("/all-users")
     public ResponseEntity<List<Users>> findAllUsers(){
@@ -64,6 +82,18 @@ public class AdminController {
     @GetMapping("/all-orders")
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(checkoutService.getAllOrders());
+    }
+
+    @GetMapping("/all-products")
+    public ResponseEntity<List<Products>> getAllProducts() {
+        return ResponseEntity.ok(productService.getAllProducts());
+    }
+
+
+    @GetMapping("/stats")
+    public ResponseEntity<AdminStatsDto> getStats() {
+        AdminStatsDto stats = service.getStats();
+        return ResponseEntity.ok(stats);
     }
 
 

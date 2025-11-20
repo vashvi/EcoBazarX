@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/seller")
+@RequestMapping("api/seller")
 public class SellerController {
 
     @Autowired
@@ -73,10 +73,6 @@ public class SellerController {
         return ResponseEntity.ok("✅ Product added successfully by " + seller.getUsername() +
                 " | Carbon footprint: " + cf + " kg CO₂e | Points: " + carbonPoints);
     }
-
-
-
-
 
     @GetMapping("/my-products")
     public ResponseEntity<List<Products>> getMyProducts(HttpServletRequest request) {
@@ -156,9 +152,5 @@ public class SellerController {
 
         return ResponseEntity.ok(sellerOrders);
     }
-
-
-
-
 
 }

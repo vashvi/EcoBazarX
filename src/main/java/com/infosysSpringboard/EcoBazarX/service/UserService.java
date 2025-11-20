@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -61,32 +60,32 @@ public class UserService {
 
     public String verify(Users user) {
         try {
-            // Support login by either username or email: if username not provided, try to find it by email
-            if ((user.getUsername() == null || user.getUsername().isBlank()) && user.getEmail() != null) {
-                java.util.Optional<Users> found = repo.findByEmail(user.getEmail());
-                if (found.isPresent()) {
-                    user.setUsername(found.get().getUsername());
-                } else {
-                    return "Login failed: user not found";
-                }
-            }
+            String input = user.getUsername();   // this may be username OR email
+
+            // Find user by username or email
+            Users dbUser = repo.findByUsernameOrEmail(input)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Authenticate using the actual username (Spring Security requires username)
             Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
+                    new UsernamePasswordAuthenticationToken(
+                            dbUser.getUsername(),   // real username from DB
+                            user.getPassword()
+                    )
             );
 
             if (authentication.isAuthenticated()) {
                 UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+                return "Login successful!\nGenerated Token: " + service.generateToken(userDetails);
+            }
 
-                String token = service.generateToken(userDetails);
-                return "Login successful!\nGenerated Token: " + token;
-            }
-            else {
-                return "Login failed!";
-            }
-        } catch (AuthenticationException e) {
+            return "Login failed!";
+        }
+        catch (Exception e) {
             return "Login failed: " + e.getMessage();
         }
     }
+
 
     public List<Products> findAllProducts() {
         return productRepo.findAll();
