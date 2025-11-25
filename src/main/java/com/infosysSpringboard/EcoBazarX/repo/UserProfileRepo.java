@@ -29,4 +29,9 @@ public interface UserProfileRepo extends JpaRepository<UserProfile, Long> {
         WHERE u.username = :username
     """)
     String findProfileWithRank(String username);
+
+    @Query("SELECT COALESCE(SUM(u.carbonSaved), 0) FROM UserProfile u")
+    double sumCarbonSaved();
+
+
 }

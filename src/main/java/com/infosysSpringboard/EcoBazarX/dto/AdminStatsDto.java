@@ -14,4 +14,9 @@ public class AdminStatsDto {
     private long totalProducts;
     private long totalOrders;
     private double totalRevenue;
+
+    private double carbonSaved;
+    private long activeCustomers;
+    private long activeSellers;
+    private long pendingSellers;
 }

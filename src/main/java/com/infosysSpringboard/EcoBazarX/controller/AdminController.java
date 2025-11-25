@@ -5,6 +5,8 @@ import com.infosysSpringboard.EcoBazarX.model.Order;
 import com.infosysSpringboard.EcoBazarX.model.Products;
 import com.infosysSpringboard.EcoBazarX.model.Role;
 import com.infosysSpringboard.EcoBazarX.model.Users;
+import com.infosysSpringboard.EcoBazarX.repo.OrderRepository;
+import com.infosysSpringboard.EcoBazarX.repo.ProductRepo;
 import com.infosysSpringboard.EcoBazarX.service.AdminService;
 import com.infosysSpringboard.EcoBazarX.service.CheckoutService;
 import com.infosysSpringboard.EcoBazarX.service.ProductService;
@@ -29,6 +31,12 @@ public class AdminController {
 
 //    @Autowired
 //    AdminStatsDto AdminStatsDto;
+
+    @Autowired
+    ProductRepo productRepository;
+
+    @Autowired
+    OrderRepository orderRepository;
 
 //    @Autowired
 //    private ProductService productService;
@@ -95,6 +103,26 @@ public class AdminController {
         AdminStatsDto stats = service.getStats();
         return ResponseEntity.ok(stats);
     }
+//    @GetMapping("/stats/monthly")
+//    public ResponseEntity<?> getMonthlyTrends() {
+//        return ResponseEntity.ok(service.getMonthlyTrends());
+//    }
+
+    @GetMapping("/stats/categories")
+    public ResponseEntity<?> getCategoryDistribution() {
+        return ResponseEntity.ok(service.getCategoryDistribution());
+    }
+
+    @GetMapping("/monthly-trends")
+    public ResponseEntity<List<Object[]>> getMonthlyTrends() {
+        return ResponseEntity.ok(orderRepository.getMonthlyTrends());
+    }
+
+    @GetMapping("/category-stats")
+    public ResponseEntity<List<Object[]>> getCategoryStats() {
+        return ResponseEntity.ok(productRepository.getCategoryDistribution());
+    }
+
 
 
 }

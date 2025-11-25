@@ -31,9 +31,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final List<String> PUBLIC_ENDPOINTS = Arrays.asList(
             "/login",
             "/register",
-            "/api/carbon/",
-            "/api/estimate",
-            "/api/auth/oauth/"
+            "/api/estimate"
     );
 
     @Override
@@ -85,6 +83,11 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicEndpoint(String path) {
-        return PUBLIC_ENDPOINTS.stream().anyMatch(path::startsWith);
+
+        if (path.startsWith("/api/auth/oauth")) return true;
+
+        return PUBLIC_ENDPOINTS.contains(path);
     }
+
+
 }

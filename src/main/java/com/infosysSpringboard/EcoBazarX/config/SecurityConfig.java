@@ -35,11 +35,16 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/register", "/login", "/api/estimate", "/api/carbon/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("api/seller/**").hasRole("SELLER")
-                        .requestMatchers("/user/**", "/api/cart/**").hasRole("USER")
-                        .anyRequest().authenticated()
+                    .requestMatchers("/register", "/login", "/api/estimate", "/api/carbon/calculate/**").permitAll()
+
+                    .requestMatchers("/admin/**", "/api/carbon/admin/**").hasRole("ADMIN")
+
+                    .requestMatchers("/api/seller/**").hasRole("SELLER")  // <-- FIXED
+
+                    .requestMatchers("/user/**", "/api/cart/**", "/api/checkout/**", "/api/carbon/user/**").hasRole("USER")
+
+                    .anyRequest().authenticated()
+
                 )
 
                 // Disable default HTTP Basic auth to avoid browser login popups on 401.

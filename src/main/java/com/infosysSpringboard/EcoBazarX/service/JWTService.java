@@ -1,47 +1,43 @@
 package com.infosysSpringboard.EcoBazarX.service;
 
+import com.infosysSpringboard.EcoBazarX.model.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service public class JWTService {
-    private final String secretKey;
-    public JWTService() {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
-            SecretKey sk = keyGen.generateKey();
-            this.secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error generating JWT secret key", e);
-        }
-    }
+@Service
+public class JWTService {
+
+    @Value("${jwt.secret}")
+    private String secretKey;
 
     public String generateToken(UserDetails userDetails) {
+
+        UserPrincipal custom = (UserPrincipal) userDetails;
+
         Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", custom.getUser().getId());
         claims.put("roles", userDetails.getAuthorities()
                 .stream()
-                .map(a -> a.getAuthority()) // e.g. ROLE_ADMIN, ROLE_USER
+                .map(a -> a.getAuthority())
                 .collect(Collectors.toList()));
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24h
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24 hrs
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -51,24 +47,26 @@ import java.util.stream.Collectors;
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    public boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractAllClaims(token).getExpiration().before(new Date());
-    }
-
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public String extractUsername(String token) {
+        return extractAllClaims(token).getSubject();
+    }
+
+    public boolean validateToken(String token, UserDetails userDetails) {
+        String username = extractUsername(token);
+
+        return username.equals(userDetails.getUsername())
+                && !isTokenExpired(token);
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractAllClaims(token).getExpiration().before(new Date());
     }
 }
